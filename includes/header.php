@@ -18,6 +18,10 @@ $user = current_user();
             <?php if ($user !== null): ?>
                 <nav class="main-nav" aria-label="Main navigation">
                     <a href="dashboard.php">Dashboard</a>
+                    <a href="categories.php">Categories</a>
+                    <a href="suppliers.php">Suppliers</a>
+                    <a href="products.php">Products</a>
+                    <a href="warehouses.php">Warehouses</a>
                 </nav>
                 <div class="user-menu">
                     <span><?= e($user['username']) ?> (<?= e($user['role']) ?>)</span>
