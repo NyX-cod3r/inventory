@@ -7,7 +7,6 @@
                     <span>Local development build</span>
                 </div>
             </footer>
-        </div>
     </div>
 
     <script src="assets/js/app.js"></script>

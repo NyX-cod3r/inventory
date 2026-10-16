@@ -44,6 +44,9 @@
 
     /* Sizing */
     --control-h: 42px;
+    --topbar-h: 62px;
+    --sidebar-w: 72px;
+    --sidebar-w-open: 248px;
     --radius-sm: 8px;
     --radius: 12px;
     --radius-lg: 18px;
@@ -57,12 +60,7 @@ html { color-scheme: dark; }
 body {
     margin: 0;
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background:
-        radial-gradient(circle at 8% 4%, rgb(34 197 94 / 7%), transparent 26rem),
-        radial-gradient(circle at 92% 12%, rgb(148 163 184 / 6%), transparent 24rem),
-        var(--bg);
+    background: var(--bg);
     color: var(--text);
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -96,18 +94,20 @@ body {
     margin-inline: auto;
 }
 
-/* Top bar */
+/* Top bar — fixed full width, so it never shifts when the sidebar opens */
 .topbar {
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 40;
-    background: rgb(19 21 24 / 82%);
-    backdrop-filter: blur(14px) saturate(150%);
+    left: 0;
+    right: 0;
+    z-index: 50;
+    height: var(--topbar-h);
+    background: var(--bg-raised);
     border-bottom: 1px solid var(--border);
 }
 
 .topbar__inner {
-    min-height: 62px;
+    height: 100%;
     display: flex;
     align-items: center;
     gap: var(--sp-4);
@@ -180,51 +180,33 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   Workspace — sidebar + content column
+   Sidebar — fixed left rail that overlays content on hover.
+   Content is offset by the collapsed width only, so opening the sidebar
+   never reflows the page (no lag, and the top bar cannot shift).
    -------------------------------------------------------------------------- */
 
-.workspace {
-    display: flex;
-    align-items: stretch;
-    flex: 1;
-    min-height: 0;
-}
-
 .sidebar {
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-    flex: none;
-    width: 252px;
-    height: 100vh;
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    bottom: 0;
+    z-index: 45;
+    width: var(--sidebar-w);
     display: flex;
     flex-direction: column;
-    padding: var(--sp-5) var(--sp-3);
+    padding: var(--sp-4) var(--sp-3);
+    background: var(--bg-sunken);
     border-right: 1px solid var(--border);
-    background: rgb(23 25 29 / 88%);
-    backdrop-filter: blur(12px) saturate(140%);
-    overflow-y: auto;
-    scrollbar-width: thin;
-    transition: width 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    transition: width 200ms cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 200ms ease;
 }
 
-.sidebar-toggle {
-    display: inline-grid;
-    place-items: center;
-    flex: none;
-    width: 38px;
-    height: 38px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-sm);
-    background: var(--bg-input);
-    color: var(--muted);
-    cursor: pointer;
-    transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
-}
-.sidebar-toggle:hover {
-    color: var(--text);
-    border-color: #4a525c;
-    background: var(--bg-hover);
+/* Hover, or keyboard focus anywhere inside, expands it over the content. */
+.sidebar:hover,
+.sidebar:focus-within {
+    width: var(--sidebar-w-open);
+    box-shadow: 1.25rem 0 2.5rem rgb(0 0 0 / 45%);
 }
 
 .sidebar__nav {
@@ -248,6 +230,25 @@ body {
     white-space: nowrap;
     transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
 }
+
+/* Fixed icon slot keeps every icon on the same x-axis in both states. */
+.sidebar__icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    color: currentColor;
+}
+
+.sidebar__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 1;
+    transition: opacity 160ms ease;
+}
+
 .sidebar__item:hover {
     color: var(--text);
     background: var(--bg-hover);
@@ -258,37 +259,24 @@ body {
     border-color: rgb(34 197 94 / 30%);
 }
 
-/* Collapsed: icons only, centred */
-.sidebar__label {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition: opacity 160ms ease;
-}
-
-html:not(.sidebar-open) .sidebar {
-    width: 72px;
-}
-html:not(.sidebar-open) .sidebar__item {
-    justify-content: center;
-    padding-inline: 0;
-}
-html:not(.sidebar-open) .sidebar__label {
+/* Collapsed: label is gone, icon centres itself in the rail. */
+.sidebar:not(:hover):not(:focus-within) .sidebar__label {
     opacity: 0;
     width: 0;
     pointer-events: none;
 }
+.sidebar:not(:hover):not(:focus-within) .sidebar__icon {
+    margin-inline: auto;
+}
 
-/* Content column */
+/* Content column — offset by the collapsed rail width, never by the open one. */
 .content {
-    flex: 1;
+    margin-top: var(--topbar-h);
+    margin-left: var(--sidebar-w);
     min-width: 0;
     display: flex;
     flex-direction: column;
-}
-
-/* Mobile overlay scrim — hidden on desktop */
-.sidebar-scrim {
-    display: none;
+    flex: 1;
 }
 
 /* Page frame — flex column with a shared gap, so any number of sibling
@@ -455,7 +443,7 @@ html:not(.sidebar-open) .sidebar__label {
     padding-inline: var(--sp-4);
     border: 1px solid rgb(34 197 94 / 45%);
     border-radius: var(--radius-sm);
-    background: linear-gradient(135deg, var(--green-strong), var(--green));
+    background: var(--green-strong);
     box-shadow: 0 0.5rem 1.15rem rgb(34 197 94 / 18%);
     color: var(--green-deep);
     font: inherit;
@@ -802,40 +790,25 @@ input::placeholder { color: var(--faint); }
     .toolbar .button { width: 100%; }
     .drawer { grid-template-columns: 0 min(430px, 100%); }
 
-    /* Sidebar becomes an overlay drawer, forced open at full width. */
-    html .sidebar,
-    html:not(.sidebar-open) .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        z-index: 70;
-        width: 252px;
-        height: 100%;
-        transform: translateX(-100%);
-        transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: 1.5rem 0 3rem rgb(0 0 0 / 45%);
+    /* No hover on touch, so the rail simply stays icon-only. */
+    .sidebar:hover,
+    .sidebar:focus-within {
+        width: var(--sidebar-w);
+        box-shadow: none;
     }
-    html.sidebar-open .sidebar { transform: none; }
-    html:not(.sidebar-open) .sidebar__item { justify-content: flex-start; padding-inline: var(--sp-3); }
-    html:not(.sidebar-open) .sidebar__label { opacity: 1; width: auto; pointer-events: auto; }
-
-    .sidebar-scrim {
-        display: block;
-        position: fixed;
-        inset: 0;
-        z-index: 65;
-        border: 0;
-        padding: 0;
-        background: rgb(0 0 0 / 55%);
+    .sidebar:hover .sidebar__label,
+    .sidebar:focus-within .sidebar__label {
         opacity: 0;
-        pointer-events: none;
-        transition: opacity 220ms ease;
+        width: 0;
     }
-    html.sidebar-open .sidebar-scrim { opacity: 1; pointer-events: auto; }
+    .sidebar:hover .sidebar__icon,
+    .sidebar:focus-within .sidebar__icon {
+        margin-inline: auto;
+    }
 }
 
 @media (max-width: 620px) {
+    :root { --sidebar-w: 60px; }
     .topbar__inner, .page, .site-footer__inner {
         width: min(var(--shell), calc(100% - var(--sp-4)));
     }
