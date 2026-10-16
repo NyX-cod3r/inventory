@@ -45,6 +45,66 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    /* ---- Sidebar collapse / expand ---------------------------------- */
+    const sidebarToggle = document.querySelector('#sidebar-toggle');
+    const sidebarScrim = document.querySelector('#sidebar-scrim');
+
+    if (sidebarToggle) {
+        const isNarrow = () => window.matchMedia('(max-width: 900px)').matches;
+
+        /* The pre-paint script in <head> owns the initial state, so this only
+           needs to keep aria-expanded honest once the DOM is ready. */
+        const syncToggle = () => {
+            const expanded = isNarrow()
+                ? document.documentElement.classList.contains('sidebar-open')
+                : !document.documentElement.classList.contains('sidebar-collapsed');
+            sidebarToggle.setAttribute('aria-expanded', String(expanded));
+        };
+
+        sidebarToggle.addEventListener('click', () => {
+            const root = document.documentElement;
+
+            if (isNarrow()) {
+                /* Narrow: the sidebar is an overlay, so open/close it. */
+                root.classList.toggle('sidebar-open');
+            } else {
+                /* Wide: collapse to icons or expand to labels. */
+                const collapsed = root.classList.toggle('sidebar-collapsed');
+                try {
+                    localStorage.setItem('im-sidebar', collapsed ? 'collapsed' : 'open');
+                } catch (e) { /* storage may be unavailable */ }
+            }
+
+            syncToggle();
+        });
+
+        if (sidebarScrim) {
+            sidebarScrim.addEventListener('click', () => {
+                document.documentElement.classList.remove('sidebar-open');
+                syncToggle();
+            });
+        }
+
+        /* Escape dismisses the mobile overlay. */
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') return;
+            if (document.documentElement.classList.contains('sidebar-open')) {
+                document.documentElement.classList.remove('sidebar-open');
+                syncToggle();
+            }
+        });
+
+        /* Keep aria-expanded correct across resize boundaries. */
+        window.addEventListener('resize', () => {
+            if (!isNarrow()) {
+                document.documentElement.classList.remove('sidebar-open');
+            }
+            syncToggle();
+        });
+
+        syncToggle();
+    }
+
     /* ---- Right-side drawer ------------------------------------------ */
     const drawer = document.querySelector('.drawer');
 

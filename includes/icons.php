@@ -29,6 +29,8 @@ function icon(string $name, int $size = 20): string
         'clock'      => '<circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3 1.8"/>',
         'alert'      => '<path d="M12 4.2 21 19.5H3Z"/><path d="M12 10v4"/><path d="M12 16.6v.2"/>',
         'box'        => '<path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5Z"/><path d="M4 8.5 12 13l8-4.5"/><path d="M12 13v7"/>',
+        'menu'       => '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>',
+        'chevron'    => '<path d="m14 6-6 6 6 6"/>',
     ];
 
     $body = $paths[$name] ?? $paths['box'];

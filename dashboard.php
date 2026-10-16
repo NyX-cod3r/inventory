@@ -64,7 +64,7 @@ page_header('Dashboard', 'A quick view of your current inventory position.');
     </article>
 </section>
 
-<div class="grid-2" style="margin-top: var(--sp-4)">
+<div class="grid-2">
     <section class="card">
         <div class="card__head">
             <h2 class="card__title"><?= icon('movements', 16) ?>Recent Movements</h2>
