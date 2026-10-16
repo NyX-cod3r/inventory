@@ -1,0 +1,156 @@
+<?php
+
+require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/csrf.php';
+
+require_login();
+
+function low_stock_report(PDO $pdo): array
+{
+    $statement = $pdo->prepare('SELECT product_name, category_name, warehouse_name, quantity, reorder_level FROM v_low_stock ORDER BY product_name, warehouse_name');
+    $statement->execute();
+
+    return $statement->fetchAll();
+}
+
+function warehouse_value_report(PDO $pdo): array
+{
+    $statement = $pdo->prepare('SELECT w.warehouse_name, COALESCE(SUM(i.quantity), 0) AS total_units, COALESCE(SUM(i.quantity * p.unit_price), 0) AS total_value FROM Warehouse AS w LEFT JOIN Inventory AS i ON i.warehouse_id = w.warehouse_id LEFT JOIN Product AS p ON p.product_id = i.product_id GROUP BY w.warehouse_id, w.warehouse_name ORDER BY w.warehouse_name');
+    $statement->execute();
+
+    return $statement->fetchAll();
+}
+
+function movement_history_report(PDO $pdo, string $fromDate, string $toDate): array
+{
+    $statement = $pdo->prepare('SELECT sm.movement_id, p.product_name, w.warehouse_name, sm.movement_type, sm.quantity, sm.moved_at FROM Stock_Movement AS sm JOIN Product AS p ON p.product_id = sm.product_id JOIN Warehouse AS w ON w.warehouse_id = sm.warehouse_id WHERE (? = \'\' OR sm.moved_at >= ?) AND (? = \'\' OR sm.moved_at < DATE_ADD(?, INTERVAL 1 DAY)) ORDER BY sm.moved_at DESC, sm.movement_id DESC');
+    $statement->execute([$fromDate, $fromDate, $toDate, $toDate]);
+
+    return $statement->fetchAll();
+}
+
+function download_csv(string $filename, array $headers, array $rows): void
+{
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    $output = fopen('php://output', 'w');
+    fputcsv($output, $headers);
+    foreach ($rows as $row) {
+        fputcsv($output, $row);
+    }
+    fclose($output);
+    exit;
+}
+
+$fromDate = trim((string) ($_GET['from_date'] ?? ''));
+$toDate = trim((string) ($_GET['to_date'] ?? ''));
+if ($fromDate !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromDate) !== 1) {
+    $fromDate = '';
+}
+if ($toDate !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $toDate) !== 1) {
+    $toDate = '';
+}
+
+$export = $_GET['export'] ?? '';
+if ($export === 'low_stock') {
+    $rows = [];
+    foreach (low_stock_report($pdo) as $item) {
+        $rows[] = [$item['product_name'], $item['category_name'], $item['warehouse_name'], $item['quantity'], $item['reorder_level']];
+    }
+    download_csv('low-stock-report.csv', ['Product', 'Category', 'Warehouse', 'Quantity', 'Reorder Level'], $rows);
+}
+if ($export === 'warehouse_value') {
+    $rows = [];
+    foreach (warehouse_value_report($pdo) as $item) {
+        $rows[] = [$item['warehouse_name'], $item['total_units'], number_format((float) $item['total_value'], 2, '.', '')];
+    }
+    download_csv('warehouse-value-report.csv', ['Warehouse', 'Total Units', 'Inventory Value'], $rows);
+}
+if ($export === 'movement_history') {
+    $rows = [];
+    foreach (movement_history_report($pdo, $fromDate, $toDate) as $item) {
+        $rows[] = [$item['moved_at'], $item['product_name'], $item['warehouse_name'], $item['movement_type'], $item['quantity']];
+    }
+    download_csv('movement-history-report.csv', ['Moved At', 'Product', 'Warehouse', 'Type', 'Quantity'], $rows);
+}
+
+$lowStock = low_stock_report($pdo);
+$warehouseValues = warehouse_value_report($pdo);
+$movementHistory = movement_history_report($pdo, $fromDate, $toDate);
+$movementExportUrl = 'reports.php?' . http_build_query(['export' => 'movement_history', 'from_date' => $fromDate, 'to_date' => $toDate]);
+$page_title = 'Reports | Inventory Manager';
+require __DIR__ . '/includes/header.php';
+?>
+<h1 class="page-title">Reports</h1>
+<p class="page-subtitle">Review stock status, warehouse value, and movement activity.</p>
+<section class="card table-card">
+    <div class="action-group">
+        <h2>Low-Stock Alerts</h2>
+        <a class="button button-small" href="reports.php?export=low_stock">Export CSV</a>
+    </div>
+    <table class="data-table">
+        <thead><tr><th>Product</th><th>Category</th><th>Warehouse</th><th>Quantity</th><th>Reorder Level</th></tr></thead>
+        <tbody>
+            <?php foreach ($lowStock as $item): ?>
+                <tr>
+                    <td><?= e($item['product_name']) ?></td>
+                    <td><?= e($item['category_name']) ?></td>
+                    <td><?= e($item['warehouse_name']) ?></td>
+                    <td><?= e((string) $item['quantity']) ?></td>
+                    <td><?= e((string) $item['reorder_level']) ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</section>
+<section class="card table-card">
+    <div class="action-group">
+        <h2>Inventory Value by Warehouse</h2>
+        <a class="button button-small" href="reports.php?export=warehouse_value">Export CSV</a>
+    </div>
+    <table class="data-table">
+        <thead><tr><th>Warehouse</th><th>Total Units</th><th>Inventory Value</th></tr></thead>
+        <tbody>
+            <?php foreach ($warehouseValues as $item): ?>
+                <tr>
+                    <td><?= e($item['warehouse_name']) ?></td>
+                    <td><?= e((string) $item['total_units']) ?></td>
+                    <td>₹<?= e(number_format((float) $item['total_value'], 2)) ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</section>
+<section class="card table-card">
+    <div class="action-group">
+        <h2>Movement History</h2>
+        <a class="button button-small" href="<?= e($movementExportUrl) ?>">Export CSV</a>
+    </div>
+    <form class="filter-form" method="get">
+        <div class="form-group">
+            <label for="from_date">From Date</label>
+            <input id="from_date" name="from_date" type="date" value="<?= e($fromDate) ?>">
+        </div>
+        <div class="form-group">
+            <label for="to_date">To Date</label>
+            <input id="to_date" name="to_date" type="date" value="<?= e($toDate) ?>">
+        </div>
+        <button class="button" type="submit">Filter History</button>
+    </form>
+    <table class="data-table">
+        <thead><tr><th>Date</th><th>Product</th><th>Warehouse</th><th>Type</th><th>Quantity</th></tr></thead>
+        <tbody>
+            <?php foreach ($movementHistory as $item): ?>
+                <tr>
+                    <td><?= e($item['moved_at']) ?></td>
+                    <td><?= e($item['product_name']) ?></td>
+                    <td><?= e($item['warehouse_name']) ?></td>
+                    <td><?= e($item['movement_type']) ?></td>
+                    <td><?= e((string) $item['quantity']) ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</section>
+<?php require __DIR__ . '/includes/footer.php'; ?>

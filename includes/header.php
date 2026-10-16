@@ -24,6 +24,7 @@ $user = current_user();
                     <a href="warehouses.php">Warehouses</a>
                     <a href="inventory.php">Inventory</a>
                     <a href="movements.php">Movements</a>
+                    <a href="reports.php">Reports</a>
                 </nav>
                 <div class="user-menu">
                     <span><?= e($user['username']) ?> (<?= e($user['role']) ?>)</span>
