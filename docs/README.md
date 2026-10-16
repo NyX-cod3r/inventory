@@ -52,13 +52,31 @@ The seed does not add website accounts. On your first visit, `index.php` redirec
 
 ## Run locally
 
-From the project folder, start the PHP server:
+Do not start the server with a bare `php -S localhost:8000`. Windows resolves
+`localhost` to both `::1` (IPv6) and `127.0.0.1` (IPv4), and a browser tries `::1`
+first. That command binds only one of the two addresses, leaving the other free for
+some unrelated process — so `http://localhost:8000/` can serve a different directory
+than `http://127.0.0.1:8000/`.
+
+Use the bundled launcher instead. It binds this folder to both addresses and reclaims
+the port from any stale PHP server first:
 
 ```powershell
-php -S localhost:8000
+powershell -ExecutionPolicy Bypass -File .\start-server.ps1
 ```
 
-Open `http://localhost:8000/`. On the first visit, create the administrator account. Later visits open the login page.
+Open `http://localhost:8000/`. Both that URL and `http://127.0.0.1:8000/` serve the
+same app. On the first visit, create the administrator account. Later visits open the
+login page.
+
+To stop the servers, or to use a different port:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start-server.ps1 -Stop
+powershell -ExecutionPolicy Bypass -File .\start-server.ps1 -Port 8080
+```
+
+Server logs are written to `.server-logs/`.
 
 ## Main features
 
