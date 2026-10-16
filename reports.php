@@ -3,6 +3,7 @@
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
+require_once __DIR__ . '/includes/ui.php';
 
 require_login();
 
@@ -79,55 +80,27 @@ $lowStock = low_stock_report($pdo);
 $warehouseValues = warehouse_value_report($pdo);
 $movementHistory = movement_history_report($pdo, $fromDate, $toDate);
 $movementExportUrl = 'reports.php?' . http_build_query(['export' => 'movement_history', 'from_date' => $fromDate, 'to_date' => $toDate]);
+$hasFilter = $fromDate !== '' || $toDate !== '';
+
+$totalValue = 0.0;
+foreach ($warehouseValues as $item) {
+    $totalValue += (float) $item['total_value'];
+}
+
 $page_title = 'Reports | Inventory Manager';
 require __DIR__ . '/includes/header.php';
+
+page_header('Reports', 'Review stock status, warehouse value, and movement activity.');
 ?>
-<h1 class="page-title">Reports</h1>
-<p class="page-subtitle">Review stock status, warehouse value, and movement activity.</p>
-<section class="card table-card">
-    <div class="action-group">
-        <h2>Low-Stock Alerts</h2>
-        <a class="button button-small" href="reports.php?export=low_stock">Export CSV</a>
+<section class="card">
+    <div class="card__head">
+        <h2 class="card__title"><?= icon('filter', 16) ?>Movement Date Range</h2>
+        <?php if ($hasFilter): ?>
+            <a class="button button--ghost button--sm" href="reports.php"><?= icon('close', 15) ?>Clear</a>
+        <?php endif; ?>
     </div>
-    <table class="data-table">
-        <thead><tr><th>Product</th><th>Category</th><th>Warehouse</th><th>Quantity</th><th>Reorder Level</th></tr></thead>
-        <tbody>
-            <?php foreach ($lowStock as $item): ?>
-                <tr>
-                    <td><?= e($item['product_name']) ?></td>
-                    <td><?= e($item['category_name']) ?></td>
-                    <td><?= e($item['warehouse_name']) ?></td>
-                    <td><?= e((string) $item['quantity']) ?></td>
-                    <td><?= e((string) $item['reorder_level']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-</section>
-<section class="card table-card">
-    <div class="action-group">
-        <h2>Inventory Value by Warehouse</h2>
-        <a class="button button-small" href="reports.php?export=warehouse_value">Export CSV</a>
-    </div>
-    <table class="data-table">
-        <thead><tr><th>Warehouse</th><th>Total Units</th><th>Inventory Value</th></tr></thead>
-        <tbody>
-            <?php foreach ($warehouseValues as $item): ?>
-                <tr>
-                    <td><?= e($item['warehouse_name']) ?></td>
-                    <td><?= e((string) $item['total_units']) ?></td>
-                    <td>₹<?= e(number_format((float) $item['total_value'], 2)) ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-</section>
-<section class="card table-card">
-    <div class="action-group">
-        <h2>Movement History</h2>
-        <a class="button button-small" href="<?= e($movementExportUrl) ?>">Export CSV</a>
-    </div>
-    <form class="filter-form" method="get">
+    <form class="toolbar" method="get">
+        <input type="hidden" name="export" value="movement_history">
         <div class="form-group">
             <label for="from_date">From Date</label>
             <input id="from_date" name="from_date" type="date" value="<?= e($fromDate) ?>">
@@ -136,21 +109,116 @@ require __DIR__ . '/includes/header.php';
             <label for="to_date">To Date</label>
             <input id="to_date" name="to_date" type="date" value="<?= e($toDate) ?>">
         </div>
-        <button class="button" type="submit">Filter History</button>
+        <button class="button" type="submit"><?= icon('filter', 16) ?>Apply to History</button>
     </form>
-    <table class="data-table">
-        <thead><tr><th>Date</th><th>Product</th><th>Warehouse</th><th>Type</th><th>Quantity</th></tr></thead>
-        <tbody>
-            <?php foreach ($movementHistory as $item): ?>
-                <tr>
-                    <td><?= e($item['moved_at']) ?></td>
-                    <td><?= e($item['product_name']) ?></td>
-                    <td><?= e($item['warehouse_name']) ?></td>
-                    <td><?= e($item['movement_type']) ?></td>
-                    <td><?= e((string) $item['quantity']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
 </section>
+
+<div class="stack">
+    <section class="card">
+        <div class="card__head">
+            <h2 class="card__title"><?= icon('alert', 16) ?>Low-Stock Alerts</h2>
+            <a class="button button--secondary button--sm" href="reports.php?export=low_stock"><?= icon('download', 15) ?>Export CSV</a>
+        </div>
+        <?php if ($lowStock === []): ?>
+            <?= empty_state('Every item is above its reorder level.', 'check') ?>
+        <?php else: ?>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Warehouse</th>
+                            <th class="num">Quantity</th>
+                            <th class="num">Reorder Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($lowStock as $item): ?>
+                            <tr>
+                                <td><span class="cell-title" title="<?= e($item['product_name']) ?>"><?= e($item['product_name']) ?></span></td>
+                                <td><?= e($item['category_name']) ?></td>
+                                <td><?= e($item['warehouse_name']) ?></td>
+                                <td class="num"><span class="badge badge--low"><?= e((string) $item['quantity']) ?></span></td>
+                                <td class="num"><?= e((string) $item['reorder_level']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-foot"><span><?= e((string) count($lowStock)) ?> item<?= count($lowStock) === 1 ? '' : 's' ?> below reorder level</span></div>
+        <?php endif; ?>
+    </section>
+
+    <section class="card">
+        <div class="card__head">
+            <h2 class="card__title"><?= icon('warehouses', 16) ?>Inventory Value by Warehouse</h2>
+            <a class="button button--secondary button--sm" href="reports.php?export=warehouse_value"><?= icon('download', 15) ?>Export CSV</a>
+        </div>
+        <?php if ($warehouseValues === []): ?>
+            <?= empty_state('No warehouses have been recorded yet.', 'warehouses') ?>
+        <?php else: ?>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Warehouse</th>
+                            <th class="num">Total Units</th>
+                            <th class="num">Inventory Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($warehouseValues as $item): ?>
+                            <tr>
+                                <td><span class="cell-title"><?= e($item['warehouse_name']) ?></span></td>
+                                <td class="num"><?= e(number_format((int) $item['total_units'])) ?></td>
+                                <td class="num">₹<?= e(number_format((float) $item['total_value'], 2)) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-foot"><span>Total across all warehouses</span><span>₹<?= e(number_format($totalValue, 2)) ?></span></div>
+        <?php endif; ?>
+    </section>
+
+    <section class="card">
+        <div class="card__head">
+            <h2 class="card__title"><?= icon('movements', 16) ?>Movement History</h2>
+            <a class="button button--secondary button--sm" href="<?= e($movementExportUrl) ?>"><?= icon('download', 15) ?>Export CSV</a>
+        </div>
+        <?php if ($movementHistory === []): ?>
+            <?= empty_state('No movements match this date range.', 'movements') ?>
+        <?php else: ?>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Warehouse</th>
+                            <th>Type</th>
+                            <th class="num">Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($movementHistory as $item): ?>
+                            <tr>
+                                <td><?= e($item['moved_at']) ?></td>
+                                <td><span class="cell-title" title="<?= e($item['product_name']) ?>"><?= e($item['product_name']) ?></span></td>
+                                <td><?= e($item['warehouse_name']) ?></td>
+                                <td><?= movement_badge($item['movement_type']) ?></td>
+                                <td class="num"><?= e((string) $item['quantity']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-foot">
+                <span><?= e((string) count($movementHistory)) ?> movement<?= count($movementHistory) === 1 ? '' : 's' ?></span>
+                <?php if ($hasFilter): ?><span>Filtered by date range</span><?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </section>
+</div>
 <?php require __DIR__ . '/includes/footer.php'; ?>

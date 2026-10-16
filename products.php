@@ -4,6 +4,7 @@ require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/flash.php';
+require_once __DIR__ . '/includes/ui.php';
 
 require_login();
 
@@ -103,6 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['edit'])) {
     }
 }
 
+$isEdit = $product['product_id'] !== '';
+$drawerOpen = $isEdit || isset($_GET['new']);
+
 $categoryStatement = $pdo->prepare('SELECT category_id, category_name FROM Category ORDER BY category_name');
 $categoryStatement->execute();
 $categories = $categoryStatement->fetchAll();
@@ -118,81 +122,107 @@ $products = $listStatement->fetchAll();
 $flash = get_flash();
 $page_title = 'Products | Inventory Manager';
 require __DIR__ . '/includes/header.php';
+
+$isAdmin = current_user()['role'] === 'admin';
+page_header(
+    'Products',
+    'Manage products, supplier assignments, prices, and reorder levels.',
+    '<a class="button" href="products.php?new=1" data-drawer-open>' . icon('plus', 16) . 'Add Product</a>'
+);
+render_alerts($flash, $errors);
 ?>
-<h1 class="page-title">Products</h1>
-<p class="page-subtitle">Manage products, supplier assignments, prices, and reorder levels.</p>
-<?php if ($flash !== null): ?>
-    <div class="alert alert-<?= e($flash['type']) ?>"><?= e($flash['message']) ?></div>
-<?php endif; ?>
-<?php foreach ($errors as $error): ?>
-    <div class="alert alert-error"><?= e($error) ?></div>
-<?php endforeach; ?>
-<div class="content-grid">
-    <section class="card">
-        <h2><?= $product['product_id'] === '' ? 'Add Product' : 'Edit Product' ?></h2>
-        <form method="post" data-validate>
-            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-            <input type="hidden" name="action" value="<?= $product['product_id'] === '' ? 'create' : 'update' ?>">
-            <input type="hidden" name="product_id" value="<?= e((string) $product['product_id']) ?>">
-            <div class="form-group">
-                <label for="category_id">Category</label>
-                <select id="category_id" name="category_id" required>
-                    <option value="">Select category</option>
-                    <?php foreach ($categories as $item): ?>
-                        <option value="<?= e((string) $item['category_id']) ?>" <?= (string) $product['category_id'] === (string) $item['category_id'] ? 'selected' : '' ?>><?= e($item['category_name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="supplier_id">Supplier</label>
-                <select id="supplier_id" name="supplier_id" required>
-                    <option value="">Select supplier</option>
-                    <?php foreach ($suppliers as $item): ?>
-                        <option value="<?= e((string) $item['supplier_id']) ?>" <?= (string) $product['supplier_id'] === (string) $item['supplier_id'] ? 'selected' : '' ?>><?= e($item['supplier_name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="product_name">Product Name</label>
-                <input id="product_name" name="product_name" maxlength="150" value="<?= e($product['product_name']) ?>" required>
-            </div>
-            <div class="form-group">
-                <label for="unit_price">Unit Price</label>
-                <input id="unit_price" name="unit_price" type="number" min="0" max="99999999.99" step="0.01" value="<?= e((string) $product['unit_price']) ?>" required>
-            </div>
-            <div class="form-group">
-                <label for="reorder_level">Reorder Level</label>
-                <input id="reorder_level" name="reorder_level" type="number" min="0" step="1" value="<?= e((string) $product['reorder_level']) ?>" required>
-            </div>
-            <button class="button" type="submit"><?= $product['product_id'] === '' ? 'Add Product' : 'Save Changes' ?></button>
-        </form>
-    </section>
-    <section class="card table-card">
-        <table class="data-table">
-            <thead><tr><th>Product</th><th>Category</th><th>Supplier</th><th>Price</th><th>Reorder</th><th>Actions</th></tr></thead>
-            <tbody>
-                <?php foreach ($products as $item): ?>
+<section class="card">
+    <div class="card__head">
+        <h2 class="card__title"><?= icon('products', 16) ?>All Products</h2>
+        <span class="badge"><?= e((string) count($products)) ?> total</span>
+    </div>
+    <?php if ($products === []): ?>
+        <?= empty_state('No products yet. Add your first product to get started.', 'products') ?>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <td><?= e($item['product_name']) ?></td>
-                        <td><?= e($item['category_name']) ?></td>
-                        <td><?= e($item['supplier_name']) ?></td>
-                        <td>₹<?= e(number_format((float) $item['unit_price'], 2)) ?></td>
-                        <td><?= e((string) $item['reorder_level']) ?></td>
-                        <td><div class="action-group">
-                            <a class="button button-small button-secondary" href="products.php?edit=<?= e((string) $item['product_id']) ?>">Edit</a>
-                            <?php if (current_user()['role'] === 'admin'): ?>
-                                <form class="inline-form" method="post">
-                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="product_id" value="<?= e((string) $item['product_id']) ?>">
-                                    <button class="button button-small button-danger" type="submit">Delete</button>
-                                </form>
-                            <?php endif; ?>
-                        </div></td>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Supplier</th>
+                        <th class="num">Price</th>
+                        <th class="num">Reorder</th>
+                        <?php if ($isAdmin): ?><th class="cell-actions">Actions</th><?php endif; ?>
                     </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($products as $item): ?>
+                        <tr>
+                            <td>
+                                <span class="cell-title" title="<?= e($item['product_name']) ?>"><?= e($item['product_name']) ?></span>
+                            </td>
+                            <td><?= e($item['category_name']) ?></td>
+                            <td><?= e($item['supplier_name']) ?></td>
+                            <td class="num">₹<?= e(number_format((float) $item['unit_price'], 2)) ?></td>
+                            <td class="num"><?= e((string) $item['reorder_level']) ?></td>
+                            <?php if ($isAdmin): ?>
+                                <td class="cell-actions">
+                                    <div class="button-group">
+                                        <a class="button button--secondary button--sm" href="products.php?edit=<?= e((string) $item['product_id']) ?>">
+                                            <?= icon('edit', 15) ?>Edit
+                                        </a>
+                                        <form class="inline-form" method="post" data-confirm="Delete this product? This cannot be undone.">
+                                            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="product_id" value="<?= e((string) $item['product_id']) ?>">
+                                            <button class="button button--danger button--sm button--block" type="submit">
+                                                <?= icon('trash', 15) ?>Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            <?php endif; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</section>
+
+<form method="post" data-validate>
+    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+    <input type="hidden" name="action" value="<?= $isEdit ? 'update' : 'create' ?>">
+    <input type="hidden" name="product_id" value="<?= e((string) $product['product_id']) ?>">
+    <?= drawer_open('products.php', $isEdit ? 'Edit Product' : 'Add Product', 'products', $drawerOpen) ?>
+    <div class="form-group">
+        <label for="product_name">Product Name</label>
+        <input id="product_name" name="product_name" maxlength="150" value="<?= e($product['product_name']) ?>" required>
+    </div>
+    <div class="form-grid">
+        <div class="form-group">
+            <label for="category_id">Category</label>
+            <select id="category_id" name="category_id" required>
+                <option value="">Select category</option>
+                <?php foreach ($categories as $item): ?>
+                    <option value="<?= e((string) $item['category_id']) ?>" <?= (string) $product['category_id'] === (string) $item['category_id'] ? 'selected' : '' ?>><?= e($item['category_name']) ?></option>
                 <?php endforeach; ?>
-            </tbody>
-        </table>
-    </section>
-</div>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="supplier_id">Supplier</label>
+            <select id="supplier_id" name="supplier_id" required>
+                <option value="">Select supplier</option>
+                <?php foreach ($suppliers as $item): ?>
+                    <option value="<?= e((string) $item['supplier_id']) ?>" <?= (string) $product['supplier_id'] === (string) $item['supplier_id'] ? 'selected' : '' ?>><?= e($item['supplier_name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="unit_price">Unit Price</label>
+            <input id="unit_price" name="unit_price" type="number" min="0" max="99999999.99" step="0.01" value="<?= e((string) $product['unit_price']) ?>" required>
+        </div>
+        <div class="form-group">
+            <label for="reorder_level">Reorder Level</label>
+            <input id="reorder_level" name="reorder_level" type="number" min="0" step="1" value="<?= e((string) $product['reorder_level']) ?>" required>
+        </div>
+    </div>
+    <?= drawer_close('products.php', $isEdit ? 'Save Changes' : 'Add Product') ?>
+</form>
 <?php require __DIR__ . '/includes/footer.php'; ?>

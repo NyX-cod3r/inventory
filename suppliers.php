@@ -4,6 +4,7 @@ require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/flash.php';
+require_once __DIR__ . '/includes/ui.php';
 
 require_login();
 
@@ -73,62 +74,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['edit'])) {
     }
 }
 
+$isEdit = $supplier['supplier_id'] !== '';
+$drawerOpen = $isEdit || isset($_GET['new']);
+
 $listStatement = $pdo->prepare('SELECT supplier_id, supplier_name, phone FROM Supplier ORDER BY supplier_name');
 $listStatement->execute();
 $suppliers = $listStatement->fetchAll();
 $flash = get_flash();
 $page_title = 'Suppliers | Inventory Manager';
 require __DIR__ . '/includes/header.php';
+
+$isAdmin = current_user()['role'] === 'admin';
+page_header(
+    'Suppliers',
+    'Manage supplier contact details.',
+    '<a class="button" href="suppliers.php?new=1" data-drawer-open>' . icon('plus', 16) . 'Add Supplier</a>'
+);
+render_alerts($flash, $errors);
 ?>
-<h1 class="page-title">Suppliers</h1>
-<p class="page-subtitle">Manage supplier contact details.</p>
-<?php if ($flash !== null): ?>
-    <div class="alert alert-<?= e($flash['type']) ?>"><?= e($flash['message']) ?></div>
-<?php endif; ?>
-<?php foreach ($errors as $error): ?>
-    <div class="alert alert-error"><?= e($error) ?></div>
-<?php endforeach; ?>
-<div class="content-grid">
-    <section class="card">
-        <h2><?= $supplier['supplier_id'] === '' ? 'Add Supplier' : 'Edit Supplier' ?></h2>
-        <form method="post" data-validate>
-            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-            <input type="hidden" name="action" value="<?= $supplier['supplier_id'] === '' ? 'create' : 'update' ?>">
-            <input type="hidden" name="supplier_id" value="<?= e((string) $supplier['supplier_id']) ?>">
-            <div class="form-group">
-                <label for="supplier_name">Supplier Name</label>
-                <input id="supplier_name" name="supplier_name" maxlength="150" value="<?= e($supplier['supplier_name']) ?>" required>
-            </div>
-            <div class="form-group">
-                <label for="phone">Phone</label>
-                <input id="phone" name="phone" maxlength="25" value="<?= e((string) $supplier['phone']) ?>">
-            </div>
-            <button class="button" type="submit"><?= $supplier['supplier_id'] === '' ? 'Add Supplier' : 'Save Changes' ?></button>
-        </form>
-    </section>
-    <section class="card table-card">
-        <table class="data-table">
-            <thead><tr><th>Supplier</th><th>Phone</th><th>Actions</th></tr></thead>
-            <tbody>
-                <?php foreach ($suppliers as $item): ?>
+<section class="card">
+    <div class="card__head">
+        <h2 class="card__title"><?= icon('suppliers', 16) ?>All Suppliers</h2>
+        <span class="badge"><?= e((string) count($suppliers)) ?> total</span>
+    </div>
+    <?php if ($suppliers === []): ?>
+        <?= empty_state('No suppliers yet. Add your first supplier to get started.', 'suppliers') ?>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <td><?= e($item['supplier_name']) ?></td>
-                        <td><?= e((string) $item['phone']) ?></td>
-                        <td><div class="action-group">
-                            <a class="button button-small button-secondary" href="suppliers.php?edit=<?= e((string) $item['supplier_id']) ?>">Edit</a>
-                            <?php if (current_user()['role'] === 'admin'): ?>
-                                <form class="inline-form" method="post">
-                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="supplier_id" value="<?= e((string) $item['supplier_id']) ?>">
-                                    <button class="button button-small button-danger" type="submit">Delete</button>
-                                </form>
-                            <?php endif; ?>
-                        </div></td>
+                        <th>Supplier</th>
+                        <th>Phone</th>
+                        <?php if ($isAdmin): ?><th class="cell-actions">Actions</th><?php endif; ?>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </section>
-</div>
+                </thead>
+                <tbody>
+                    <?php foreach ($suppliers as $item): ?>
+                        <tr>
+                            <td>
+                                <span class="cell-title" title="<?= e($item['supplier_name']) ?>"><?= e($item['supplier_name']) ?></span>
+                            </td>
+                            <td><?= $item['phone'] !== null && $item['phone'] !== '' ? e($item['phone']) : '<span class="cell-sub">—</span>' ?></td>
+                            <?php if ($isAdmin): ?>
+                                <td class="cell-actions">
+                                    <div class="button-group">
+                                        <a class="button button--secondary button--sm" href="suppliers.php?edit=<?= e((string) $item['supplier_id']) ?>">
+                                            <?= icon('edit', 15) ?>Edit
+                                        </a>
+                                        <form class="inline-form" method="post" data-confirm="Delete this supplier? This cannot be undone.">
+                                            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="supplier_id" value="<?= e((string) $item['supplier_id']) ?>">
+                                            <button class="button button--danger button--sm button--block" type="submit">
+                                                <?= icon('trash', 15) ?>Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            <?php endif; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</section>
+
+<form method="post" data-validate>
+    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+    <input type="hidden" name="action" value="<?= $isEdit ? 'update' : 'create' ?>">
+    <input type="hidden" name="supplier_id" value="<?= e((string) $supplier['supplier_id']) ?>">
+    <?= drawer_open('suppliers.php', $isEdit ? 'Edit Supplier' : 'Add Supplier', 'suppliers', $drawerOpen) ?>
+    <div class="form-group">
+        <label for="supplier_name">Supplier Name</label>
+        <input id="supplier_name" name="supplier_name" maxlength="150" value="<?= e($supplier['supplier_name']) ?>" required>
+    </div>
+    <div class="form-group">
+        <label for="phone">Phone</label>
+        <input id="phone" name="phone" maxlength="25" value="<?= e((string) $supplier['phone']) ?>">
+    </div>
+    <?= drawer_close('suppliers.php', $isEdit ? 'Save Changes' : 'Add Supplier') ?>
+</form>
 <?php require __DIR__ . '/includes/footer.php'; ?>

@@ -2,6 +2,21 @@
 
 $title = $page_title ?? 'Inventory Manager';
 $user = current_user();
+
+require_once __DIR__ . '/icons.php';
+
+$current = basename($_SERVER['SCRIPT_NAME'] ?? '');
+
+$navItems = [
+    'dashboard.php'  => ['Dashboard', 'dashboard'],
+    'categories.php' => ['Categories', 'categories'],
+    'suppliers.php'  => ['Suppliers', 'suppliers'],
+    'products.php'   => ['Products', 'products'],
+    'warehouses.php' => ['Warehouses', 'warehouses'],
+    'inventory.php'  => ['Inventory', 'inventory'],
+    'movements.php'  => ['Movements', 'movements'],
+    'reports.php'    => ['Reports', 'reports'],
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -13,30 +28,38 @@ $user = current_user();
     <link rel="stylesheet" href="assets/css/liquidGlass.css">
 </head>
 <body>
-    <header class="site-header liquid-glass liquid-glass--compact">
-        <span class="liquid-glass__backdrop"></span>
-        <span class="liquid-glass__edge"></span>
-        <div class="nav-wrap liquid-glass__content">
-            <a class="brand" href="dashboard.php">Inventory Manager</a>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="topbar">
+        <div class="topbar__inner">
+            <a class="brand" href="dashboard.php"><?= icon('brand', 22) ?><span>Inventory Manager</span></a>
             <?php if ($user !== null): ?>
-                <nav class="main-nav" aria-label="Main navigation">
-                    <a href="dashboard.php">Dashboard</a>
-                    <a href="categories.php">Categories</a>
-                    <a href="suppliers.php">Suppliers</a>
-                    <a href="products.php">Products</a>
-                    <a href="warehouses.php">Warehouses</a>
-                    <a href="inventory.php">Inventory</a>
-                    <a href="movements.php">Movements</a>
-                    <a href="reports.php">Reports</a>
-                </nav>
                 <div class="user-menu">
-                    <span><?= e($user['username']) ?> (<?= e($user['role']) ?>)</span>
+                    <span class="user-menu__avatar"><?= icon('user', 16) ?></span>
+                    <span class="user-menu__meta">
+                        <strong><?= e($user['username']) ?></strong>
+                        <em><?= e($user['role']) ?></em>
+                    </span>
                     <form action="logout.php" method="post">
                         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                        <button class="link-button" type="submit">Logout</button>
+                        <button class="link-button" type="submit"><?= icon('logout', 16) ?><span>Logout</span></button>
                     </form>
                 </div>
             <?php endif; ?>
         </div>
     </header>
-    <main class="page-container">
+
+    <?php if ($user !== null): ?>
+        <nav class="rail" aria-label="Main navigation">
+            <div class="rail__inner">
+                <?php foreach ($navItems as $href => [$label, $iconName]): ?>
+                    <a class="rail__item<?= $current === $href ? ' is-active' : '' ?>"
+                       href="<?= e($href) ?>"<?= $current === $href ? ' aria-current="page"' : '' ?>>
+                        <?= icon($iconName, 18) ?><span><?= e($label) ?></span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </nav>
+    <?php endif; ?>
+
+    <main id="main" class="page">

@@ -4,6 +4,7 @@ require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/flash.php';
+require_once __DIR__ . '/includes/ui.php';
 
 require_login();
 
@@ -73,62 +74,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['edit'])) {
     }
 }
 
+$isEdit = $warehouse['warehouse_id'] !== '';
+$drawerOpen = $isEdit || isset($_GET['new']);
+
 $listStatement = $pdo->prepare('SELECT warehouse_id, warehouse_name, location FROM Warehouse ORDER BY warehouse_name');
 $listStatement->execute();
 $warehouses = $listStatement->fetchAll();
 $flash = get_flash();
 $page_title = 'Warehouses | Inventory Manager';
 require __DIR__ . '/includes/header.php';
+
+$isAdmin = current_user()['role'] === 'admin';
+page_header(
+    'Warehouses',
+    'Manage warehouse locations.',
+    '<a class="button" href="warehouses.php?new=1" data-drawer-open>' . icon('plus', 16) . 'Add Warehouse</a>'
+);
+render_alerts($flash, $errors);
 ?>
-<h1 class="page-title">Warehouses</h1>
-<p class="page-subtitle">Manage warehouse locations.</p>
-<?php if ($flash !== null): ?>
-    <div class="alert alert-<?= e($flash['type']) ?>"><?= e($flash['message']) ?></div>
-<?php endif; ?>
-<?php foreach ($errors as $error): ?>
-    <div class="alert alert-error"><?= e($error) ?></div>
-<?php endforeach; ?>
-<div class="content-grid">
-    <section class="card">
-        <h2><?= $warehouse['warehouse_id'] === '' ? 'Add Warehouse' : 'Edit Warehouse' ?></h2>
-        <form method="post" data-validate>
-            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-            <input type="hidden" name="action" value="<?= $warehouse['warehouse_id'] === '' ? 'create' : 'update' ?>">
-            <input type="hidden" name="warehouse_id" value="<?= e((string) $warehouse['warehouse_id']) ?>">
-            <div class="form-group">
-                <label for="warehouse_name">Warehouse Name</label>
-                <input id="warehouse_name" name="warehouse_name" maxlength="150" value="<?= e($warehouse['warehouse_name']) ?>" required>
-            </div>
-            <div class="form-group">
-                <label for="location">Location</label>
-                <input id="location" name="location" maxlength="200" value="<?= e((string) $warehouse['location']) ?>">
-            </div>
-            <button class="button" type="submit"><?= $warehouse['warehouse_id'] === '' ? 'Add Warehouse' : 'Save Changes' ?></button>
-        </form>
-    </section>
-    <section class="card table-card">
-        <table class="data-table">
-            <thead><tr><th>Warehouse</th><th>Location</th><th>Actions</th></tr></thead>
-            <tbody>
-                <?php foreach ($warehouses as $item): ?>
+<section class="card">
+    <div class="card__head">
+        <h2 class="card__title"><?= icon('warehouses', 16) ?>All Warehouses</h2>
+        <span class="badge"><?= e((string) count($warehouses)) ?> total</span>
+    </div>
+    <?php if ($warehouses === []): ?>
+        <?= empty_state('No warehouses yet. Add your first warehouse to get started.', 'warehouses') ?>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <td><?= e($item['warehouse_name']) ?></td>
-                        <td><?= e((string) $item['location']) ?></td>
-                        <td><div class="action-group">
-                            <a class="button button-small button-secondary" href="warehouses.php?edit=<?= e((string) $item['warehouse_id']) ?>">Edit</a>
-                            <?php if (current_user()['role'] === 'admin'): ?>
-                                <form class="inline-form" method="post">
-                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="warehouse_id" value="<?= e((string) $item['warehouse_id']) ?>">
-                                    <button class="button button-small button-danger" type="submit">Delete</button>
-                                </form>
-                            <?php endif; ?>
-                        </div></td>
+                        <th>Warehouse</th>
+                        <th>Location</th>
+                        <?php if ($isAdmin): ?><th class="cell-actions">Actions</th><?php endif; ?>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </section>
-</div>
+                </thead>
+                <tbody>
+                    <?php foreach ($warehouses as $item): ?>
+                        <tr>
+                            <td>
+                                <span class="cell-title" title="<?= e($item['warehouse_name']) ?>"><?= e($item['warehouse_name']) ?></span>
+                            </td>
+                            <td><?= $item['location'] !== null && $item['location'] !== '' ? e($item['location']) : '<span class="cell-sub">—</span>' ?></td>
+                            <?php if ($isAdmin): ?>
+                                <td class="cell-actions">
+                                    <div class="button-group">
+                                        <a class="button button--secondary button--sm" href="warehouses.php?edit=<?= e((string) $item['warehouse_id']) ?>">
+                                            <?= icon('edit', 15) ?>Edit
+                                        </a>
+                                        <form class="inline-form" method="post" data-confirm="Delete this warehouse? This cannot be undone.">
+                                            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="warehouse_id" value="<?= e((string) $item['warehouse_id']) ?>">
+                                            <button class="button button--danger button--sm button--block" type="submit">
+                                                <?= icon('trash', 15) ?>Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            <?php endif; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</section>
+
+<form method="post" data-validate>
+    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+    <input type="hidden" name="action" value="<?= $isEdit ? 'update' : 'create' ?>">
+    <input type="hidden" name="warehouse_id" value="<?= e((string) $warehouse['warehouse_id']) ?>">
+    <?= drawer_open('warehouses.php', $isEdit ? 'Edit Warehouse' : 'Add Warehouse', 'warehouses', $drawerOpen) ?>
+    <div class="form-group">
+        <label for="warehouse_name">Warehouse Name</label>
+        <input id="warehouse_name" name="warehouse_name" maxlength="150" value="<?= e($warehouse['warehouse_name']) ?>" required>
+    </div>
+    <div class="form-group">
+        <label for="location">Location</label>
+        <input id="location" name="location" maxlength="200" value="<?= e((string) $warehouse['location']) ?>">
+    </div>
+    <?= drawer_close('warehouses.php', $isEdit ? 'Save Changes' : 'Add Warehouse') ?>
+</form>
 <?php require __DIR__ . '/includes/footer.php'; ?>

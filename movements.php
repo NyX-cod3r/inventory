@@ -4,6 +4,7 @@ require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/flash.php';
+require_once __DIR__ . '/includes/ui.php';
 
 require_login();
 
@@ -129,23 +130,30 @@ $historyStatement = $pdo->prepare('SELECT sm.movement_id, p.product_name, w.ware
 $historyStatement->execute([$fromDate, $fromDate, $toDate, $toDate]);
 $history = $historyStatement->fetchAll();
 
+$hasFilter = $fromDate !== '' || $toDate !== '';
+$exportUrl = 'reports.php?' . http_build_query(['export' => 'movement_history', 'from_date' => $fromDate, 'to_date' => $toDate]);
+
 $flash = get_flash();
 $page_title = 'Stock Movements | Inventory Manager';
 require __DIR__ . '/includes/header.php';
+
+page_header(
+    'Stock Movements',
+    'Record incoming, outgoing, and transfer movements safely.',
+    '<a class="button button--secondary" href="' . e($exportUrl) . '">' . icon('download', 16) . 'Export CSV</a>'
+);
+render_alerts($flash, $errors);
 ?>
-<h1 class="page-title">Stock Movements</h1>
-<p class="page-subtitle">Record incoming, outgoing, and transfer movements safely.</p>
-<?php if ($flash !== null): ?>
-    <div class="alert alert-<?= e($flash['type']) ?>"><?= e($flash['message']) ?></div>
-<?php endif; ?>
-<?php foreach ($errors as $error): ?>
-    <div class="alert alert-error"><?= e($error) ?></div>
-<?php endforeach; ?>
-<div class="content-grid">
-    <section class="card">
-        <h2>Record Movement</h2>
-        <form method="post" data-validate>
-            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+<section class="card">
+    <div class="card__head">
+        <h2 class="card__title"><?= icon('plus', 16) ?>Record Movement</h2>
+        <span class="badge badge--in">IN</span>
+        <span class="badge badge--out">OUT</span>
+        <span class="badge badge--transfer">TRANSFER</span>
+    </div>
+    <form method="post" data-validate>
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+        <div class="form-grid">
             <div class="form-group">
                 <label for="product_id">Product</label>
                 <select id="product_id" name="product_id" required>
@@ -167,9 +175,9 @@ require __DIR__ . '/includes/header.php';
             <div class="form-group">
                 <label for="movement_type">Movement Type</label>
                 <select id="movement_type" name="movement_type" required>
-                    <option value="IN" <?= $movement['movement_type'] === 'IN' ? 'selected' : '' ?>>IN</option>
-                    <option value="OUT" <?= $movement['movement_type'] === 'OUT' ? 'selected' : '' ?>>OUT</option>
-                    <option value="TRANSFER" <?= $movement['movement_type'] === 'TRANSFER' ? 'selected' : '' ?>>TRANSFER</option>
+                    <option value="IN" <?= $movement['movement_type'] === 'IN' ? 'selected' : '' ?>>IN — stock in</option>
+                    <option value="OUT" <?= $movement['movement_type'] === 'OUT' ? 'selected' : '' ?>>OUT — stock out</option>
+                    <option value="TRANSFER" <?= $movement['movement_type'] === 'TRANSFER' ? 'selected' : '' ?>>TRANSFER — move between warehouses</option>
                 </select>
             </div>
             <div id="transfer-field" class="form-group transfer-field" hidden>
@@ -185,36 +193,62 @@ require __DIR__ . '/includes/header.php';
                 <label for="quantity">Quantity</label>
                 <input id="quantity" name="quantity" type="number" min="1" step="1" value="<?= e($movement['quantity']) ?>" required>
             </div>
-            <button class="button" type="submit">Record Movement</button>
-        </form>
-    </section>
-    <section class="card table-card">
-        <h2>Movement History</h2>
-        <form class="filter-form" method="get">
-            <div class="form-group">
-                <label for="from_date">From Date</label>
-                <input id="from_date" name="from_date" type="date" value="<?= e($fromDate) ?>">
-            </div>
-            <div class="form-group">
-                <label for="to_date">To Date</label>
-                <input id="to_date" name="to_date" type="date" value="<?= e($toDate) ?>">
-            </div>
-            <button class="button" type="submit">Filter History</button>
-        </form>
-        <table class="data-table">
-            <thead><tr><th>Date</th><th>Product</th><th>Warehouse</th><th>Type</th><th>Quantity</th></tr></thead>
-            <tbody>
-                <?php foreach ($history as $item): ?>
+        </div>
+        <button class="button" type="submit" style="margin-top: var(--sp-4)"><?= icon('check', 16) ?>Record Movement</button>
+    </form>
+</section>
+
+<section class="card">
+    <div class="card__head">
+        <h2 class="card__title"><?= icon('clock', 16) ?>Movement History</h2>
+        <span class="badge"><?= e((string) count($history)) ?> records</span>
+    </div>
+    <form class="toolbar" method="get" style="margin-bottom: var(--sp-4)">
+        <div class="form-group">
+            <label for="from_date">From Date</label>
+            <input id="from_date" name="from_date" type="date" value="<?= e($fromDate) ?>">
+        </div>
+        <div class="form-group">
+            <label for="to_date">To Date</label>
+            <input id="to_date" name="to_date" type="date" value="<?= e($toDate) ?>">
+        </div>
+        <button class="button" type="submit"><?= icon('filter', 16) ?>Apply Filters</button>
+        <?php if ($hasFilter): ?>
+            <a class="button button--ghost" href="movements.php"><?= icon('close', 16) ?>Clear</a>
+        <?php endif; ?>
+    </form>
+
+    <?php if ($history === []): ?>
+        <?= empty_state('No movements match this date range.', 'movements') ?>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <td><?= e($item['moved_at']) ?></td>
-                        <td><?= e($item['product_name']) ?></td>
-                        <td><?= e($item['warehouse_name']) ?></td>
-                        <td><?= e($item['movement_type']) ?></td>
-                        <td><?= e((string) $item['quantity']) ?></td>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th>Warehouse</th>
+                        <th>Type</th>
+                        <th class="num">Quantity</th>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </section>
-</div>
+                </thead>
+                <tbody>
+                    <?php foreach ($history as $item): ?>
+                        <tr>
+                            <td><?= e($item['moved_at']) ?></td>
+                            <td><span class="cell-title" title="<?= e($item['product_name']) ?>"><?= e($item['product_name']) ?></span></td>
+                            <td><?= e($item['warehouse_name']) ?></td>
+                            <td><?= movement_badge($item['movement_type']) ?></td>
+                            <td class="num"><?= e((string) $item['quantity']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="table-foot">
+            <span><?= e((string) count($history)) ?> movement<?= count($history) === 1 ? '' : 's' ?></span>
+            <?php if ($hasFilter): ?><span>Filtered by date range</span><?php endif; ?>
+        </div>
+    <?php endif; ?>
+</section>
 <?php require __DIR__ . '/includes/footer.php'; ?>
