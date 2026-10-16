@@ -10,10 +10,13 @@ $user = current_user();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($title) ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/liquidGlass.css">
 </head>
 <body>
-    <header class="site-header">
-        <div class="nav-wrap">
+    <header class="site-header liquid-glass liquid-glass--compact">
+        <span class="liquid-glass__backdrop"></span>
+        <span class="liquid-glass__edge"></span>
+        <div class="nav-wrap liquid-glass__content">
             <a class="brand" href="dashboard.php">Inventory Manager</a>
             <?php if ($user !== null): ?>
                 <nav class="main-nav" aria-label="Main navigation">

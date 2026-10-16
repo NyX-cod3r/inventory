@@ -24,17 +24,29 @@ require __DIR__ . '/includes/header.php';
 <h1 class="page-title">Dashboard</h1>
 <p class="page-subtitle">A quick view of your current inventory position.</p>
 <section class="card-grid">
-    <article class="card">
-        <p class="metric-label">Total Products</p>
-        <p class="metric-value"><?= e((string) $totalProducts) ?></p>
+    <article class="card liquid-glass liquid-glass--compact">
+        <span class="liquid-glass__backdrop"></span>
+        <span class="liquid-glass__edge"></span>
+        <div class="liquid-glass__content">
+            <p class="metric-label">Total Products</p>
+            <p class="metric-value"><?= e((string) $totalProducts) ?></p>
+        </div>
     </article>
-    <article class="card">
-        <p class="metric-label">Total Stock Value</p>
-        <p class="metric-value">₹<?= e(number_format($totalStockValue, 2)) ?></p>
+    <article class="card liquid-glass liquid-glass--compact">
+        <span class="liquid-glass__backdrop"></span>
+        <span class="liquid-glass__edge"></span>
+        <div class="liquid-glass__content">
+            <p class="metric-label">Total Stock Value</p>
+            <p class="metric-value">₹<?= e(number_format($totalStockValue, 2)) ?></p>
+        </div>
     </article>
-    <article class="card">
-        <p class="metric-label">Low-Stock Records</p>
-        <p class="metric-value"><?= e((string) $lowStockCount) ?></p>
+    <article class="card liquid-glass liquid-glass--compact">
+        <span class="liquid-glass__backdrop"></span>
+        <span class="liquid-glass__edge"></span>
+        <div class="liquid-glass__content">
+            <p class="metric-label">Low-Stock Records</p>
+            <p class="metric-value"><?= e((string) $lowStockCount) ?></p>
+        </div>
     </article>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>
