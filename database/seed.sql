@@ -5,7 +5,6 @@ TRUNCATE TABLE Product;
 TRUNCATE TABLE Warehouse;
 TRUNCATE TABLE Supplier;
 TRUNCATE TABLE Category;
-TRUNCATE TABLE Users;
 SET FOREIGN_KEY_CHECKS = 1;
 
 INSERT INTO Category (category_name) VALUES
@@ -88,7 +87,3 @@ INSERT INTO Stock_Movement (product_id, warehouse_id, movement_type, quantity, m
 (16, 3, 'OUT', 1, '2026-10-09 15:10:00'),
 (9, 1, 'TRANSFER', 4, '2026-10-10 13:25:00'),
 (22, 2, 'IN', 8, '2026-10-11 09:50:00');
-
-INSERT INTO Users (username, password_hash, role) VALUES
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi', 'admin'),
-('staff', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi', 'staff');
