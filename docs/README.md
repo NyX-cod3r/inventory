@@ -78,6 +78,23 @@ powershell -ExecutionPolicy Bypass -File .\start-server.ps1 -Port 8080
 
 Server logs are written to `.server-logs/`.
 
+## Start automatically at logon
+
+A scheduled task named `InventoryManagerDevServer` runs the launcher when you sign in,
+so `http://localhost:8000/` is ready without starting it by hand. It runs as your user
+(no administrator rights needed) and is registered on this machine, not in Git.
+
+Manage it with:
+
+```powershell
+Start-ScheduledTask   -TaskName 'InventoryManagerDevServer'   # start now
+Stop-ScheduledTask    -TaskName 'InventoryManagerDevServer'   # stop the trigger's run
+Unregister-ScheduledTask -TaskName 'InventoryManagerDevServer' -Confirm:$false   # remove
+```
+
+Because the launcher reclaims the port from stale servers on every run, the task is safe
+to trigger repeatedly.
+
 ## Main features
 
 - Login, logout, sessions, password hashing, CSRF protection, and role checks
