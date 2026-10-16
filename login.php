@@ -4,6 +4,13 @@ require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
 
+$countStatement = $pdo->prepare('SELECT COUNT(*) FROM Users');
+$countStatement->execute();
+if ((int) $countStatement->fetchColumn() === 0) {
+    header('Location: setup.php');
+    exit;
+}
+
 if (current_user() !== null) {
     header('Location: dashboard.php');
     exit;

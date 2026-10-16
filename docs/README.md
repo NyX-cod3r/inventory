@@ -48,20 +48,7 @@ Copy `config/config.sample.php` to `config/config.php` if it does not already ex
 
 `config/config.php` is excluded from Git because it contains credentials.
 
-The seed does not add website accounts. Create your initial administrator before attempting to log in.
-
-Generate a password hash:
-
-```powershell
-php -r "echo password_hash('choose-a-strong-password', PASSWORD_DEFAULT), PHP_EOL;"
-```
-
-Insert the printed hash into MySQL:
-
-```sql
-INSERT INTO Users (username, password_hash, role)
-VALUES ('your-admin-username', 'paste-the-generated-hash-here', 'admin');
-```
+The seed does not add website accounts. On your first visit, `index.php` redirects to a one-time setup page that creates your first administrator with `password_hash()`.
 
 ## Run locally
 
@@ -71,7 +58,7 @@ From the project folder, start the PHP server:
 php -S localhost:8000
 ```
 
-Open `http://localhost:8000/login.php` and sign in with the administrator you created.
+Open `http://localhost:8000/`. On the first visit, create the administrator account. Later visits open the login page.
 
 ## Main features
 
