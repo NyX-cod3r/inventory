@@ -18,4 +18,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    const movementType = document.querySelector('#movement_type');
+    const transferField = document.querySelector('#transfer-field');
+    const destinationWarehouse = document.querySelector('#to_warehouse_id');
+
+    if (movementType && transferField && destinationWarehouse) {
+        const updateTransferField = () => {
+            const isTransfer = movementType.value === 'TRANSFER';
+            transferField.hidden = !isTransfer;
+            destinationWarehouse.required = isTransfer;
+            destinationWarehouse.disabled = !isTransfer;
+        };
+
+        movementType.addEventListener('change', updateTransferField);
+        updateTransferField();
+    }
 });

@@ -164,6 +164,27 @@ body {
     border: 1px solid #abefc6;
 }
 
+.filter-form {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 22px;
+}
+
+.filter-form .form-group {
+    margin: 0;
+}
+
+.filter-form .button {
+    width: auto;
+    white-space: nowrap;
+}
+
+.transfer-field[hidden] {
+    display: none;
+}
+
 select {
     width: 100%;
     padding: 11px 12px;
@@ -257,6 +278,10 @@ input {
     }
 
     .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-form {
         grid-template-columns: 1fr;
     }
 }
