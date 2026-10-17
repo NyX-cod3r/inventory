@@ -3,7 +3,7 @@
 if (!is_file(__DIR__ . '/config.php')) {
     http_response_code(500);
     echo 'Database configuration is missing. Copy config/config.sample.php to '
-        . 'config/config.php and set your MySQL credentials. See docs/README.md (or the README on GitHub) for setup steps.';
+        . 'config/config.php and set your MySQL credentials. See README.md for setup steps.';
     exit;
 }
 
