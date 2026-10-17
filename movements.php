@@ -139,7 +139,6 @@ require __DIR__ . '/includes/header.php';
 
 page_header(
     'Stock Movements',
-    'Record incoming, outgoing, and transfer movements safely.',
     '<a class="button button--secondary" href="' . e($exportUrl) . '">' . icon('download', 16) . 'Export CSV</a>'
 );
 render_alerts($flash, $errors);
@@ -147,9 +146,9 @@ render_alerts($flash, $errors);
 <section class="card">
     <div class="card__head">
         <h2 class="card__title"><?= icon('plus', 16) ?>Record Movement</h2>
-        <span class="badge badge--in">IN</span>
-        <span class="badge badge--out">OUT</span>
-        <span class="badge badge--transfer">TRANSFER</span>
+        <span class="movement-type movement-type--in"><span class="movement-type__dot" aria-hidden="true"></span>IN</span>
+        <span class="movement-type movement-type--out"><span class="movement-type__dot" aria-hidden="true"></span>OUT</span>
+        <span class="movement-type movement-type--transfer"><span class="movement-type__dot" aria-hidden="true"></span>TRANSFER</span>
     </div>
     <form method="post" data-validate>
         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">

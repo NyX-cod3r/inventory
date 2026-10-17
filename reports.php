@@ -90,7 +90,7 @@ foreach ($warehouseValues as $item) {
 $page_title = 'Reports | Inventory Manager';
 require __DIR__ . '/includes/header.php';
 
-page_header('Reports', 'Review stock status, warehouse value, and movement activity.');
+page_header('Reports');
 ?>
 <section class="card">
     <div class="card__head">

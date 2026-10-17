@@ -87,7 +87,6 @@ require __DIR__ . '/includes/header.php';
 $isAdmin = current_user()['role'] === 'admin';
 page_header(
     'Warehouses',
-    'Manage warehouse locations.',
     '<a class="button" href="warehouses.php?new=1" data-drawer-open>' . icon('plus', 16) . 'Add Warehouse</a>'
 );
 render_alerts($flash, $errors);

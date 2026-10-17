@@ -44,7 +44,7 @@
 
     /* Sizing */
     --control-h: 42px;
-    --topbar-h: 62px;
+    --topbar-h: 52px;
     --sidebar-w: 72px;
     --sidebar-w-open: 248px;
     --radius-sm: 8px;
@@ -87,9 +87,7 @@ body {
    Shell — every band shares one container, so all edges align exactly
    -------------------------------------------------------------------------- */
 
-.topbar__inner,
-.page,
-.site-footer__inner {
+.page {
     width: min(var(--shell), calc(100% - var(--sp-6)));
     margin-inline: auto;
 }
@@ -110,7 +108,8 @@ body {
     height: 100%;
     display: flex;
     align-items: center;
-    gap: var(--sp-4);
+    gap: var(--sp-3);
+    padding-inline: var(--sp-4);
 }
 
 .brand {
@@ -125,6 +124,75 @@ body {
     white-space: nowrap;
 }
 .brand .icon { color: var(--green); }
+
+/* Page title that slides into the topbar once the in-page heading scrolls
+   under it. Driven by a class toggle (not scroll progress), so the CSS
+   transition always plays out to completion — never a half-faded title. */
+.topbar__crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+    margin-left: var(--sp-1);
+    color: var(--muted);
+    font-size: 0.98rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 220ms ease, transform 220ms ease;
+}
+.topbar__crumb.is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Smaller than the 8px movement dots. */
+.topbar__crumb-dot {
+    flex: none;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--faint);
+}
+
+.topbar__crumb-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Per-letter spans inside the crumb (the flight targets). */
+.topbar__crumb-letter {
+    display: inline-block;
+    white-space: pre;
+}
+
+/* Fixed overlay holding the letters while they fly between the page
+   heading and the topbar. position:fixed + transform-origin:left top lets
+   each clone land exactly on its measured target rect. */
+.flight-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+}
+
+.flight-letter {
+    position: fixed;
+    display: inline-block;
+    white-space: pre;
+    transform-origin: left top;
+    will-change: transform, color;
+    transition: transform var(--flight-dur, 420ms) cubic-bezier(0.22, 1, 0.36, 1),
+                color var(--flight-dur, 420ms) ease,
+                letter-spacing var(--flight-dur, 420ms) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flight-letter { transition: none; }
+}
 
 .user-menu {
     margin-left: auto;
@@ -312,12 +380,6 @@ body {
     line-height: 1.15;
 }
 
-.page-subtitle {
-    margin: var(--sp-2) 0 0;
-    color: var(--muted);
-    font-size: 0.95rem;
-}
-
 /* Login and setup pages use their own centred shell and are not part of the
    workspace layout, so they need their own card sizing rules. */
 .login-page {
@@ -333,27 +395,11 @@ body {
 }
 
 .login-card .page-title {
-    margin-bottom: var(--sp-2);
-}
-
-.login-card .page-subtitle {
     margin-bottom: var(--sp-5);
 }
 
 .login-card .button {
     margin-top: var(--sp-2);
-}
-
-.site-footer {
-    border-top: 1px solid var(--border);
-    padding-block: var(--sp-4);
-}
-.site-footer__inner {
-    display: flex;
-    gap: var(--sp-2);
-    justify-content: center;
-    color: var(--faint);
-    font-size: 0.82rem;
 }
 
 /* --------------------------------------------------------------------------
@@ -444,7 +490,6 @@ body {
     border: 1px solid rgb(34 197 94 / 45%);
     border-radius: var(--radius-sm);
     background: var(--green-strong);
-    box-shadow: 0 0.5rem 1.15rem rgb(34 197 94 / 18%);
     color: var(--green-deep);
     font: inherit;
     font-size: 0.92rem;
@@ -452,11 +497,10 @@ body {
     text-decoration: none;
     white-space: nowrap;
     cursor: pointer;
-    transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+    transition: transform 160ms ease, filter 160ms ease;
 }
 .button:hover {
     filter: brightness(1.07);
-    box-shadow: 0 0.8rem 1.5rem rgb(34 197 94 / 26%);
     transform: translateY(-1px);
 }
 
@@ -663,21 +707,36 @@ input::placeholder { color: var(--faint); }
     display: inline-flex;
     align-items: center;
     gap: var(--sp-1);
-    padding: 3px var(--sp-2);
-    border-radius: 999px;
-    border: 1px solid var(--border-strong);
-    background: var(--bg-hover);
     color: var(--muted);
     font-size: 0.74rem;
     font-weight: 600;
     letter-spacing: 0.02em;
     white-space: nowrap;
 }
-.badge--in { background: var(--green-wash); border-color: rgb(34 197 94 / 34%); color: var(--green-soft); }
-.badge--out { background: var(--danger-wash); border-color: rgb(248 113 113 / 34%); color: var(--danger); }
-.badge--transfer { background: rgb(148 163 184 / 12%); border-color: rgb(148 163 184 / 30%); color: var(--muted); }
-.badge--low { background: var(--amber-wash); border-color: rgb(251 191 36 / 34%); color: var(--amber); }
-.badge--ok { background: var(--green-wash); border-color: rgb(34 197 94 / 30%); color: var(--green-soft); }
+.badge--in { color: var(--green-soft); }
+.badge--out { color: var(--danger); }
+.badge--transfer { color: var(--muted); }
+.badge--low { color: var(--amber); }
+.badge--ok { color: var(--green-soft); }
+
+/* Movement type — a coloured dot followed by normal table text. */
+.movement-type {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    color: var(--text);
+    font-size: 0.9rem;
+}
+.movement-type__dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+}
+.movement-type--in .movement-type__dot { background: var(--green-soft); }
+.movement-type--out .movement-type__dot { background: var(--danger); }
+.movement-type--transfer .movement-type__dot { background: var(--muted); }
 
 /* --------------------------------------------------------------------------
    Alerts
@@ -809,7 +868,7 @@ input::placeholder { color: var(--faint); }
 
 @media (max-width: 620px) {
     :root { --sidebar-w: 60px; }
-    .topbar__inner, .page, .site-footer__inner {
+    .page {
         width: min(var(--shell), calc(100% - var(--sp-4)));
     }
     .user-menu__meta { display: none; }

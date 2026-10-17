@@ -126,7 +126,6 @@ require __DIR__ . '/includes/header.php';
 $isAdmin = current_user()['role'] === 'admin';
 page_header(
     'Products',
-    'Manage products, supplier assignments, prices, and reorder levels.',
     '<a class="button" href="products.php?new=1" data-drawer-open>' . icon('plus', 16) . 'Add Product</a>'
 );
 render_alerts($flash, $errors);

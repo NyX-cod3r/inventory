@@ -40,11 +40,3 @@ function icon(string $name, int $size = 20): string
         . '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
         . $body . '</svg>';
 }
-
-/**
- * Renders the two decorative layers every liquid-glass surface needs.
- */
-function glass_layers(): string
-{
-    return '<span class="liquid-glass__backdrop"></span><span class="liquid-glass__edge"></span>';
-}

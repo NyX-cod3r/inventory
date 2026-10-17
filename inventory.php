@@ -39,7 +39,7 @@ foreach ($inventory as $row) {
 $page_title = 'Inventory | Inventory Manager';
 require __DIR__ . '/includes/header.php';
 
-page_header('Current Inventory', 'Search stock quantities by product and warehouse.');
+page_header('Current Inventory');
 ?>
 <section class="card">
     <div class="card__head">

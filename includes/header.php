@@ -25,7 +25,6 @@ $navItems = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($title) ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/liquidGlass.css">
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -34,6 +33,10 @@ $navItems = [
         <div class="topbar__inner">
             <a class="brand" href="dashboard.php"><?= icon('brand', 22) ?><span>Inventory Manager</span></a>
             <?php if ($user !== null): ?>
+                <span class="topbar__crumb" data-page-crumb aria-hidden="true">
+                    <span class="topbar__crumb-dot"></span>
+                    <span class="topbar__crumb-text"></span>
+                </span>
                 <div class="user-menu">
                     <span class="user-menu__avatar"><?= icon('user', 16) ?></span>
                     <span class="user-menu__meta">

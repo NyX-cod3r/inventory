@@ -87,7 +87,6 @@ require __DIR__ . '/includes/header.php';
 $isAdmin = current_user()['role'] === 'admin';
 page_header(
     'Suppliers',
-    'Manage supplier contact details.',
     '<a class="button" href="suppliers.php?new=1" data-drawer-open>' . icon('plus', 16) . 'Add Supplier</a>'
 );
 render_alerts($flash, $errors);

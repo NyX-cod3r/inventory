@@ -4,15 +4,14 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/icons.php';
 
 /**
- * Page title band. Left: title + subtitle. Right: optional actions.
+ * Page title band. Left: title. Right: optional actions.
  * Keeps every page on the same baseline.
  */
-function page_header(string $title, string $subtitle, string $actions = ''): void
+function page_header(string $title, string $actions = ''): void
 {
     echo '<div class="page-header">';
     echo '<div class="page-header__titles">';
     echo '<h1 class="page-title">' . e($title) . '</h1>';
-    echo '<p class="page-subtitle">' . e($subtitle) . '</p>';
     echo '</div>';
     if ($actions !== '') {
         echo '<div class="page-header__actions">' . $actions . '</div>';
@@ -59,19 +58,20 @@ function empty_state(string $message, string $iconName = 'box'): void
 }
 
 /**
- * Renders a movement-type badge (IN / OUT / TRANSFER).
+ * Renders a movement-type indicator (coloured dot + label) for IN / OUT / TRANSFER.
  */
 function movement_badge(string $type): string
 {
     $map = [
-        'IN'       => ['badge--in', 'in'],
-        'OUT'      => ['badge--out', 'out'],
-        'TRANSFER' => ['badge--transfer', 'transfer'],
+        'IN'       => ['in', 'in'],
+        'OUT'      => ['out', 'out'],
+        'TRANSFER' => ['transfer', 'transfer'],
     ];
 
-    [$class, $label] = $map[$type] ?? ['badge--transfer', strtolower($type)];
+    [$class, $label] = $map[$type] ?? ['transfer', strtolower($type)];
 
-    return '<span class="badge ' . $class . '">' . e($label) . '</span>';
+    return '<span class="movement-type movement-type--' . $class . '">'
+        . '<span class="movement-type__dot" aria-hidden="true"></span>' . e($label) . '</span>';
 }
 
 /**

@@ -35,32 +35,23 @@ $lowStock = $pdo->query(
 $page_title = 'Dashboard | Inventory Manager';
 require __DIR__ . '/includes/header.php';
 
-page_header('Dashboard', 'A quick view of your current inventory position.');
+page_header('Dashboard');
 ?>
 <section class="grid-3">
-    <article class="card liquid-glass liquid-glass--compact">
-        <?= glass_layers() ?>
-        <div class="liquid-glass__content">
-            <p class="kpi__label"><?= icon('products', 16) ?>Total Products</p>
-            <p class="kpi__value"><?= e((string) $totalProducts) ?></p>
-            <p class="kpi__hint">Across <?= e((string) $warehouseCount) ?> warehouses</p>
-        </div>
+    <article class="card">
+        <p class="kpi__label"><?= icon('products', 16) ?>Total Products</p>
+        <p class="kpi__value"><?= e((string) $totalProducts) ?></p>
+        <p class="kpi__hint">Across <?= e((string) $warehouseCount) ?> warehouses</p>
     </article>
-    <article class="card liquid-glass liquid-glass--compact">
-        <?= glass_layers() ?>
-        <div class="liquid-glass__content">
-            <p class="kpi__label"><?= icon('inventory', 16) ?>Total Stock Value</p>
-            <p class="kpi__value">₹<?= e(number_format($totalStockValue, 2)) ?></p>
-            <p class="kpi__hint"><?= e(number_format($totalUnits)) ?> units on hand</p>
-        </div>
+    <article class="card">
+        <p class="kpi__label"><?= icon('inventory', 16) ?>Total Stock Value</p>
+        <p class="kpi__value">₹<?= e(number_format($totalStockValue, 2)) ?></p>
+        <p class="kpi__hint"><?= e(number_format($totalUnits)) ?> units on hand</p>
     </article>
-    <article class="card liquid-glass liquid-glass--compact">
-        <?= glass_layers() ?>
-        <div class="liquid-glass__content">
-            <p class="kpi__label"><?= icon('alert', 16) ?>Low-Stock Records</p>
-            <p class="kpi__value"><?= e((string) $lowStockCount) ?></p>
-            <p class="kpi__hint">At or below reorder level</p>
-        </div>
+    <article class="card">
+        <p class="kpi__label"><?= icon('alert', 16) ?>Low-Stock Records</p>
+        <p class="kpi__value"><?= e((string) $lowStockCount) ?></p>
+        <p class="kpi__hint">At or below reorder level</p>
     </article>
 </section>
 

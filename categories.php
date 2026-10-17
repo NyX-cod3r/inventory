@@ -88,7 +88,6 @@ require __DIR__ . '/includes/header.php';
 $isAdmin = current_user()['role'] === 'admin';
 page_header(
     'Categories',
-    'Create and maintain product categories.',
     '<a class="button" href="categories.php?new=1" data-drawer-open>' . icon('plus', 16) . 'Add Category</a>'
 );
 render_alerts($flash, $errors);

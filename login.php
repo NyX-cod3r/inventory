@@ -52,15 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Inventory Manager</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/liquidGlass.css">
 </head>
 <body class="login-page">
-    <section class="login-card liquid-glass liquid-glass--rounded">
-        <span class="liquid-glass__backdrop"></span>
-        <span class="liquid-glass__edge"></span>
-        <div class="liquid-glass__content">
+    <section class="card login-card">
         <h1 class="page-title">Inventory Manager</h1>
-        <p class="page-subtitle">Sign in to manage warehouse inventory.</p>
         <?php if ($error !== ''): ?>
             <div class="alert alert-error"><?= e($error) ?></div>
         <?php endif; ?>
@@ -76,7 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <button class="button" type="submit">Login</button>
         </form>
-        </div>
     </section>
     <script src="assets/js/app.js"></script>
 </body>
